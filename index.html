@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>네이버 블로그 초안 생성기 · 끈질긴라벤더</title>
+<style>
+  :root {
+    --lav-50: #f5f3ff;
+    --lav-100: #ede9fe;
+    --lav-200: #ddd6fe;
+    --lav-400: #a78bfa;
+    --lav-500: #8b5cf6;
+    --lav-600: #7c3aed;
+    --lav-700: #6d28d9;
+    --ink: #1e293b;
+    --ink-soft: #64748b;
+    --line: #e2e8f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+      "Pretendard", "Malgun Gothic", sans-serif;
+    background: var(--lav-50);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 16px 64px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--lav-500);
+    display: flex; align-items: center; gap: 6px;
+  }
+  h1 { font-size: 26px; font-weight: 800; margin: 6px 0 8px; letter-spacing: -0.02em; }
+  .sub { font-size: 14px; color: var(--ink-soft); margin: 0; }
+  .sub b { color: var(--lav-600); font-weight: 600; }
+  .card {
+    background: #fff; border: 1px solid var(--lav-100);
+    border-radius: 18px; padding: 20px;
+    box-shadow: 0 1px 2px rgba(124, 58, 237, 0.04);
+    margin-top: 22px;
+  }
+  label.field { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  label.field .opt { font-weight: 400; color: #94a3b8; }
+  input[type="text"], textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 12px;
+    padding: 11px 14px; font-size: 14px; font-family: inherit;
+    outline: none; transition: border .15s, box-shadow .15s; resize: none;
+  }
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--lav-400); box-shadow: 0 0 0 3px var(--lav-100);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 5px 11px; font-size: 12px; color: var(--ink-soft); cursor: pointer;
+    transition: all .15s;
+  }
+  .chip:hover { border-color: var(--lav-300); color: var(--lav-600); }
+  .grid4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  @media (min-width: 560px) { .grid4 { grid-template-columns: repeat(4, 1fr); } }
+  .grid2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 560px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .opt-btn {
+    text-align: left; border: 1px solid var(--line); background: #fff;
+    border-radius: 12px; padding: 10px 12px; cursor: pointer; transition: all .15s;
+    font-family: inherit; width: 100%;
+  }
+  .opt-btn:hover { border-color: var(--lav-200); }
+  .opt-btn.active { border-color: var(--lav-400); background: var(--lav-50); }
+  .opt-btn .t { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .opt-btn .h { font-size: 11px; color: #94a3b8; }
+  .stack { display: flex; flex-direction: column; gap: 6px; }
+  .row-btn {
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid var(--line); background: #fff; border-radius: 10px;
+    padding: 9px 12px; cursor: pointer; transition: all .15s;
+    font-size: 14px; color: var(--ink-soft); font-family: inherit; width: 100%;
+  }
+  .row-btn:hover { border-color: var(--lav-200); }
+  .row-btn.active { border-color: var(--lav-400); background: var(--lav-50); color: var(--lav-700); font-weight: 600; }
+  .row-btn small { color: #94a3b8; font-weight: 400; }
+  .mt16 { margin-top: 16px; }
+  .gen {
+    margin-top: 20px; width: 100%; border: none; border-radius: 12px;
+    background: var(--lav-600); color: #fff; font-size: 15px; font-weight: 700;
+    padding: 14px; cursor: pointer; transition: background .15s, transform .05s;
+    font-family: inherit;
+  }
+  .gen:hover { background: var(--lav-700); }
+  .gen:active { transform: scale(.99); }
+  .gen:disabled { background: var(--lav-200); cursor: not-allowed; }
+  .err { color: #e11d48; font-size: 14px; margin-top: 12px; }
+  .result { margin-top: 22px; display: flex; flex-direction: column; gap: 16px; }
+  .sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .sec-title { font-size: 14px; font-weight: 700; }
+  .copy {
+    border: 1px solid var(--lav-200); background: #fff; color: var(--lav-700);
+    border-radius: 9px; padding: 6px 12px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .15s; font-family: inherit;
+  }
+  .copy:hover { background: var(--lav-50); }
+  .copy.sm { padding: 4px 10px; font-size: 12px; }
+  .title-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: var(--lav-50); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .title-item span { font-size: 14px; }
+  .body-text { white-space: pre-wrap; font-size: 15px; line-height: 1.75; color: #334155; }
+  .tag { display: inline-block; background: var(--lav-100); color: var(--lav-700);
+    border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; margin: 0 6px 6px 0; }
+  .full-copy {
+    width: 100%; border: 1px solid var(--lav-200); background: #fff; color: var(--lav-700);
+    border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+  }
+  .note { text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.6; padding: 0 8px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff;
+    border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: -2px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">🪻 끈질긴라벤더 · 블로그 도구</div>
+  <h1>네이버 블로그 초안 생성기</h1>
+  <p class="sub">주제만 넣으면 블로그체 초안·제목·태그를 뽑아줘요. 생성된 글은
+    <b>직접 검토·편집</b> 후 네이버 <b>예약 발행</b>으로 올리는 걸 권장해요.</p>
+
+  <div class="card">
+    <label class="field" for="topic">주제 또는 키워드</label>
+    <input type="text" id="topic" placeholder="예) 인천 송도 파스타 맛집, 집들이 케이터링 후기" />
+    <div class="chips" id="chips">
+      <span class="chip">동네 카페 신메뉴 시식</span>
+      <span class="chip">배달 밀키트 후기</span>
+      <span class="chip">분위기 좋은 디저트집</span>
+      <span class="chip">가성비 점심 맛집</span>
+    </div>
+
+    <label class="field mt16">글 유형</label>
+    <div class="grid4" id="types"></div>
+
+    <div id="productWrap" class="mt16" style="display:none;">
+      <label class="field" for="product">가게/메뉴/제품 정보 <span class="opt">(선택)</span></label>
+      <textarea id="product" rows="3" placeholder="가게 이름, 먹어본 메뉴, 직접 느낀 맛·분위기 등을 적어주세요."></textarea>
+    </div>
+
+    <div class="grid2 mt16">
+      <div>
+        <label class="field">말투</label>
+        <div class="stack" id="tones"></div>
+      </div>
+      <div>
+        <label class="field">분량</label>
+        <div class="stack" id="lengths"></div>
+      </div>
+    </div>
+
+    <label class="field mt16" for="keywords">포함할 검색 키워드 <span class="opt">(선택, 쉼표 구분)</span></label>
+    <input type="text" id="keywords" placeholder="예) 송도 맛집, 파스타, 주차" />
+
+    <button class="gen" id="genBtn">초안 생성하기</button>
+    <div class="err" id="err" style="display:none;"></div>
+  </div>
+
+  <div class="result" id="result" style="display:none;"></div>
+</div>
+
+<script>
+  const TYPES = [
+    { id: "review", label: "체험단 리뷰", hint: "시식·방문 후기" },
+    { id: "place", label: "맛집·장소", hint: "가게 소개" },
+    { id: "info", label: "정보글", hint: "꿀팁·레시피" },
+    { id: "daily", label: "일상", hint: "먹은 기록" },
+  ];
+  const TONES = [
+    { id: "friendly", label: "친근한 반말체" },
+    { id: "polite", label: "정중한 존댓말" },
+    { id: "neutral", label: "담백한 정보형" },
+  ];
+  const LENGTHS = [
+    { id: "short", label: "짧게", chars: "약 800자" },
+    { id: "medium", label: "보통", chars: "약 1,500자" },
+    { id: "long", label: "길게", chars: "약 2,500자" },
+  ];
+
+  const state = { type: "review", tone: "friendly", length: "medium" };
+
+  function renderTypes() {
+    document.getElementById("types").innerHTML = TYPES.map(t =>
+      `<button class="opt-btn ${state.type===t.id?'active':''}" data-type="${t.id}">
+        <div class="t">${t.label}</div><div class="h">${t.hint}</div>
+      </button>`).join("");
+    document.querySelectorAll("[data-type]").forEach(b =>
+      b.onclick = () => { state.type = b.dataset.type; renderTypes(); toggleProduct(); });
+  }
+  function renderTones() {
+    document.getElementById("tones").innerHTML = TONES.map(t =>
+      `<button class="row-btn ${state.tone===t.id?'active':''}" data-tone="${t.id}">${t.label}</button>`).join("");
+    document.querySelectorAll("[data-tone]").forEach(b =>
+      b.onclick = () => { state.tone = b.dataset.tone; renderTones(); });
+  }
+  function renderLengths() {
+    document.getElementById("lengths").innerHTML = LENGTHS.map(l =>
+      `<button class="row-btn ${state.length===l.id?'active':''}" data-length="${l.id}">
+        <span>${l.label}</span><small>${l.chars}</small></button>`).join("");
+    document.querySelectorAll("[data-length]").forEach(b =>
+      b.onclick = () => { state.length = b.dataset.length; renderLengths(); });
+  }
+  function toggleProduct() {
+    document.getElementById("productWrap").style.display =
+      state.type === "review" ? "block" : "none";
+  }
+
+  document.getElementById("chips").querySelectorAll(".chip").forEach(c =>
+    c.onclick = () => { document.getElementById("topic").value = c.textContent; });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, m =>
+      ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[m]));
+  }
+  async function copyText(text, btn) {
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = btn.textContent; btn.textContent = "복사됨 ✓";
+      setTimeout(() => btn.textContent = old, 1400);
+    } catch (e) {}
+  }
+
+  async function generate() {
+    const topic = document.getElementById("topic").value.trim();
+    const err = document.getElementById("err");
+    const btn = document.getElementById("genBtn");
+    err.style.display = "none";
+    if (!topic) { err.textContent = "주제 또는 키워드를 입력해 주세요."; err.style.display = "block"; return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>초안 작성 중…';
+    document.getElementById("result").style.display = "none";
+
+    try {
+      const r = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          type: state.type,
+          tone: state.tone,
+          length: state.length,
+          productInfo: document.getElementById("product").value,
+          keywords: document.getElementById("keywords").value,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "생성 실패");
+      renderResult(data);
+    } catch (e) {
+      err.textContent = e.message || "초안 생성에 실패했어요. 잠시 후 다시 시도해 주세요.";
+      err.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "초안 생성하기";
+    }
+  }
+
+  function renderResult(d) {
+    const box = document.getElementById("result");
+    const titlesHtml = (d.titles || []).map((t, i) =>
+      `<div class="title-item"><span>${escapeHtml(t)}</span>
+        <button class="copy sm" data-copy="t${i}">복사</button></div>`).join("");
+    const tagsHtml = (d.tags || []).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join("");
+    const fullText = `${(d.titles&&d.titles[0])||""}\n\n${d.body||""}\n\n${(d.tags||[]).map(t=>"#"+t).join(" ")}`;
+
+    box.innerHTML = `
+      <div class="card">
+        <div class="sec-title" style="margin-bottom:12px;">제목 후보</div>
+        ${titlesHtml}
+      </div>
+      <div class="card">
+        <div class="sec-head"><div class="sec-title">본문</div>
+          <button class="copy" id="copyBody">복사</button></div>
+        <div class="body-text" id="bodyText"></div>
+      </div>
+      <div class="card">
+        <div class="sec-head"><div class="sec-title">추천 태그</div>
+          <button class="copy" id="copyTags">복사</button></div>
+        <div>${tagsHtml}</div>
+      </div>
+      <button class="full-copy" id="copyAll">제목 + 본문 + 태그 전체 복사</button>
+      <p class="note">그대로 올리지 말고 본인 사진·경험을 더해 한 번 다듬은 뒤 발행하세요.
+        그래야 저품질 위험을 피하고 블로그 지수가 올라갑니다.</p>`;
+
+    document.getElementById("bodyText").textContent = d.body || "";
+    (d.titles || []).forEach((t, i) =>
+      document.querySelector(`[data-copy="t${i}"]`).onclick = e => copyText(t, e.target));
+    document.getElementById("copyBody").onclick = e => copyText(d.body || "", e.target);
+    document.getElementById("copyTags").onclick = e =>
+      copyText((d.tags||[]).map(t=>"#"+t).join(" "), e.target);
+    document.getElementById("copyAll").onclick = e => copyText(fullText, e.target);
+
+    box.style.display = "flex";
+    box.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  document.getElementById("genBtn").onclick = generate;
+  renderTypes(); renderTones(); renderLengths(); toggleProduct();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "name": "blog-draft-generator",
+  "version": "1.0.0",
+  "description": "네이버 블로그 초안 생성기 (Gemini + Vercel)",
+  "type": "module",
+  "private": true
+}
