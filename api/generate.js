@@ -12,6 +12,7 @@ const TYPE_LABEL = {
 };
 const TONE_LABEL = {
   friendly: "친근한 반말체",
+  warm: "친근한 존댓말",
   polite: "정중한 존댓말",
   neutral: "담백한 정보형",
 };
