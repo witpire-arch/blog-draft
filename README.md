@@ -8,11 +8,17 @@ API 키는 Vercel 서버리스 함수(`/api/generate`)에만 보관되고 브라
 ```
 blog-draft-generator/
 ├── api/
-│   └── generate.js     # Gemini 호출 (키 숨김)
-├── index.html          # 화면 (vanilla HTML/JS)
+│   ├── generate.js     # 초안 생성 (Gemini)
+│   ├── keywords.js     # 키워드 추천 (Gemini)
+│   └── trend.js        # 검색어 트렌드 (네이버 데이터랩)
+├── index.html          # 화면 (vanilla HTML/JS, 2탭)
 ├── package.json
 └── README.md
 ```
+
+**탭 구성**
+- **초안 생성**: 주제 → 제목·본문·태그
+- **키워드 찾기**: 주제로 키워드 후보 추천 → 골라서 데이터랩 트렌드 그래프 확인
 
 ## 배포 방법
 
@@ -32,11 +38,24 @@ git push
 ### 3) 환경변수 등록 (중요)
 Vercel 프로젝트 → **Settings → Environment Variables**:
 
-| Key | Value |
-|-----|-------|
-| `GEMINI_API_KEY` | 본인 Gemini API 키 (말씀노트에서 쓰던 그 키 재사용 가능) |
+| Key | Value | 용도 |
+|-----|-------|------|
+| `GEMINI_API_KEY` | Gemini API 키 (말씀노트 키 재사용 가능) | 초안 생성 + 키워드 추천 |
+| `NAVER_CLIENT_ID` | 네이버 개발자센터 Client ID | 데이터랩 트렌드 |
+| `NAVER_CLIENT_SECRET` | 네이버 개발자센터 Client Secret | 데이터랩 트렌드 |
 
-> 키는 https://aistudio.google.com/apikey 에서 발급. 등록 후 **Redeploy** 한 번 해줘야 적용됩니다.
+> 모두 등록 후 **Redeploy** 한 번 해줘야 적용됩니다.
+
+**Gemini 키:** https://aistudio.google.com/apikey 에서 발급 (`AIza...`)
+
+**네이버 데이터랩 키 발급:**
+1. https://developers.naver.com → 로그인 → **Application → 애플리케이션 등록**
+2. 앱 이름 입력, **사용 API**에서 **데이터랩(검색어 트렌드)** 선택
+3. 환경 추가에서 **WEB 설정** → 서비스 URL에 배포 주소(`https://...vercel.app`) 입력
+4. 등록하면 **Client ID / Client Secret**이 나옴 → Vercel 환경변수에 등록
+
+> 데이터랩 트렌드는 **절대 검색량이 아니라** 기간 내 최고점=100 기준의 **상대 트렌드**입니다.
+> 절대 월 검색량이 필요하면 블랙키위·키워드마스터를 병행하세요.
 
 ### 4) 끝
 배포된 주소(`https://blog-draft-xxx.vercel.app`)로 들어가서 주제 넣고 생성하면 됩니다.
