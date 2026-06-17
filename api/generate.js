@@ -77,7 +77,8 @@ export default async function handler(req, res) {
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
       generationConfig: {
         temperature: 0.95,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 3072,
+        thinkingConfig: { thinkingBudget: 0 }, // 2.5 Flash 사고 끄기 (출력 잘림 방지)
         responseMimeType: "application/json",
         responseSchema: {
           type: "object",
