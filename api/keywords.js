@@ -3,6 +3,22 @@
 
 const MODEL = "gemini-2.5-flash";
 
+// 503/429/500(일시적 과부하)이면 잠깐 기다렸다 재시도
+async function callWithRetry(url, body, tries = 3) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    last = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (last.ok) return last;
+    if (![429, 500, 503].includes(last.status)) return last;
+    if (i < tries - 1) await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+  }
+  return last;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST 요청만 허용됩니다." });
@@ -61,11 +77,7 @@ export default async function handler(req, res) {
     };
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const r = await callWithRetry(url, body);
 
     if (!r.ok) {
       const t = await r.text();
