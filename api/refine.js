@@ -2,16 +2,29 @@
 // 생성된 본문에서 'AI 티'를 제거합니다: 반복 표현 제거, 감탄사 감소, 경험담 추가, 말투 자연화.
 // [사진N] 마커와 소제목 줄은 그대로 유지합니다.
 
+export const maxDuration = 60; // Vercel 함수 최대 실행시간(초)
+
 const MODEL = "gemini-2.5-flash";
 
+// 응답 지연 시 25초 후 중단 + 503/429/500이면 재시도
 async function callWithRetry(url, body, tries = 3) {
   let last;
   for (let i = 0; i < tries; i++) {
-    last = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25000);
+    try {
+      last = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      clearTimeout(timer);
+      if (i < tries - 1) { await new Promise((r) => setTimeout(r, 800 * (i + 1))); continue; }
+      throw e;
+    }
+    clearTimeout(timer);
     if (last.ok) return last;
     if (![429, 500, 503].includes(last.status)) return last;
     if (i < tries - 1) await new Promise((r) => setTimeout(r, 800 * (i + 1)));
