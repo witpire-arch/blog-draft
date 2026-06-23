@@ -189,6 +189,22 @@
   async function copyText(text,btn){ try{ await navigator.clipboard.writeText(text);
     const o=btn.textContent; btn.textContent="복사됨 ✓"; setTimeout(()=>btn.textContent=o,1400);}catch(e){} }
 
+  // 제한시간 있는 POST 요청 — 무한로딩 방지
+  async function fetchJSON(url, payload, ms=30000){
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(), ms);
+    try{
+      const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload),signal:ctrl.signal});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.error||("오류 ("+r.status+")"));
+      return data;
+    }catch(e){
+      if(e.name==="AbortError") throw new Error("응답이 너무 오래 걸려요. 잠시 후 다시 시도해 주세요.");
+      throw e;
+    }finally{ clearTimeout(timer); }
+  }
+
   document.querySelectorAll(".tab").forEach(t=> t.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); t.classList.add("active");
     document.getElementById("tab-draft").style.display = t.dataset.tab==="draft"?"block":"none";
@@ -224,11 +240,9 @@
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span>초안 작성 중…';
     document.getElementById("draftResult").style.display="none";
     try{
-      const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({topic,type:dstate.type,tone:dstate.tone,length:dstate.length,
-          productInfo:document.getElementById("product").value,reviewNotes:document.getElementById("notes").value,
-          keywords:document.getElementById("keywords").value})});
-      const data=await r.json(); if(!r.ok) throw new Error(data.error||"생성 실패");
+      const data=await fetchJSON("/api/generate",{topic,type:dstate.type,tone:dstate.tone,length:dstate.length,
+        productInfo:document.getElementById("product").value,reviewNotes:document.getElementById("notes").value,
+        keywords:document.getElementById("keywords").value},60000);
       lastResult=data; renderDraft();
     }catch(e){err.textContent=e.message;err.style.display="block";}
     finally{btn.disabled=false;btn.textContent="초안 생성하기";}
@@ -333,9 +347,7 @@
     const btn=document.getElementById("aiBtn");
     btn.disabled=true; btn.innerHTML='<span class="spinner sm"></span>다듬는 중…';
     try{
-      const r=await fetch("/api/refine",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({body:lastResult.body,tone:dstate.tone})});
-      const data=await r.json(); if(!r.ok) throw new Error(data.error||"실패");
+      const data=await fetchJSON("/api/refine",{body:lastResult.body,tone:dstate.tone},60000);
       lastResult.body=data.body; renderDraft(); // 본문 갱신 + SEO 재계산
     }catch(e){ btn.disabled=false; btn.textContent="✨ AI 티 제거"; alert(e.message); }
   }
@@ -361,8 +373,7 @@
     if(!topic){err.textContent="주제를 입력해 주세요.";err.style.display="block";return;}
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span>추천 중…';
     try{
-      const r=await fetch("/api/keywords",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic,region})});
-      const data=await r.json(); if(!r.ok) throw new Error(data.error||"추천 실패");
+      const data=await fetchJSON("/api/keywords",{topic,region});
       const list=document.getElementById("recList");
       list.innerHTML=(data.keywords||[]).map(k=>`<span class="chip" data-kw="${escapeHtml(k.keyword)}"><b style="color:var(--lav-600);">${escapeHtml(k.type||"")}</b> ${escapeHtml(k.keyword)} ＋</span>`).join("");
       list.querySelectorAll("[data-kw]").forEach(c=>c.onclick=()=>addKeyword(c.dataset.kw));
@@ -377,8 +388,7 @@
     if(!selected.length){err.textContent="키워드를 1개 이상 추가해 주세요.";err.style.display="block";return;}
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span>조회 중…';
     try{
-      const r=await fetch("/api/trend",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:selected})});
-      const data=await r.json(); if(!r.ok) throw new Error(data.error||"조회 실패");
+      const data=await fetchJSON("/api/trend",{keywords:selected});
       renderTrend(data.results||[]);
     }catch(e){err.textContent=e.message;err.style.display="block";}
     finally{btn.disabled=false;btn.textContent="데이터랩 트렌드 보기";}
