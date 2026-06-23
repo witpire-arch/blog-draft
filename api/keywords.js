@@ -3,7 +3,7 @@
 
 const MODEL = "gemini-2.5-flash";
 
-// 응답 지연 시 25초 후 중단 + 503/429/500이면 재시도
+// 응답 지연 시 25초 후 중단 + 503/500이면 재시도(429 제외)
 async function callWithRetry(url, body, tries = 3) {
   let last;
   for (let i = 0; i < tries; i++) {
@@ -23,7 +23,7 @@ async function callWithRetry(url, body, tries = 3) {
     }
     clearTimeout(timer);
     if (last.ok) return last;
-    if (![429, 500, 503].includes(last.status)) return last;
+    if (![500, 503].includes(last.status)) return last; // 429(한도)는 재시도 안 함
     if (i < tries - 1) await new Promise((r) => setTimeout(r, 800 * (i + 1)));
   }
   return last;
@@ -92,7 +92,11 @@ export default async function handler(req, res) {
     if (!r.ok) {
       const t = await r.text();
       console.error("Gemini error:", r.status, t);
-      return res.status(502).json({ error: "Gemini 응답 오류 (" + r.status + ")" });
+      const msg =
+        r.status === 429
+          ? "지금 사용량이 많아요. 1분 뒤 다시 시도해 주세요. (무료 사용 한도 초과)"
+          : "Gemini 응답 오류 (" + r.status + ")";
+      return res.status(r.status === 429 ? 429 : 502).json({ error: msg });
     }
 
     const data = await r.json();
