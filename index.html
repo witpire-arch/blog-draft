@@ -373,7 +373,8 @@
     const btn=document.getElementById("aiBtn");
     btn.disabled=true; btn.innerHTML='<span class="spinner sm"></span>다듬는 중…';
     try{
-      const data=await fetchJSON("/api/refine",{body:lastResult.body,tone:dstate.tone},60000);
+      const data=await fetchJSON("/api/refine",{body:lastResult.body,tone:dstate.tone,
+        mainKeyword:lastResult.mainKeyword,relatedKeywords:lastResult.relatedKeywords},60000);
       lastResult.body=data.body; renderDraft(); // 본문 갱신 + SEO 재계산
     }catch(e){ btn.disabled=false; btn.textContent="✨ AI 티 제거"; alert(e.message); }
   }
