@@ -292,6 +292,8 @@
   function renderDraft(){
     const d=lastResult, box=document.getElementById("draftResult");
     const seo=computeSEO(d);
+    const warnIssues=seo.checks.filter(c=>!c[0]).map(c=>c[1]);
+    const hasWarn=warnIssues.length>0;
     const titles=(d.titles||[]).map((t,i)=>`<div class="title-item"><span>${escapeHtml(t)} <span style="color:#94a3b8;font-size:12px;">(${t.length}자)</span></span><button class="copy sm" data-c="t${i}">복사</button></div>`).join("");
     const checks=seo.checks.map(([ok,txt])=>`<div class="check ${ok?'pass':'warn'}"><span class="ic">${ok?'✔':'⚠'}</span><span>${escapeHtml(txt)}</span></div>`).join("");
     const photo=(d.photoGuide||[]).map((p,i)=>`<div class="pg-row"><span class="pg-num">사진${i+1}</span><span>${escapeHtml(p.caption||"")}</span></div>`).join("");
@@ -301,7 +303,10 @@
 
     box.innerHTML=`
       <div class="card">
-        <div class="sec-title" style="margin-bottom:14px;">🔥 네이버 블로그 최적화 점수</div>
+        <div class="sec-head" style="margin-bottom:14px;">
+          <div class="sec-title">🔥 네이버 블로그 최적화 점수</div>
+          ${hasWarn?'<button class="ai-btn" id="seoFixBtn">⚡ 자동 보완</button>':'<span style="font-size:12px;color:var(--ok);font-weight:700;">✓ 최적화 완료</span>'}
+        </div>
         <div class="seo-top">
           <div><span class="seo-num" style="color:${seoColor(seo.score)}">${seo.score}</span><span class="seo-unit">점</span></div>
           <div class="seo-bar">
@@ -339,8 +344,29 @@
     if(rec) document.getElementById("cRec").onclick=e=>copyText(buildRecBlock(d),e.target);
     if(isPlace) document.getElementById("cStore").onclick=e=>copyText(buildStoreBlock(),e.target);
     document.getElementById("aiBtn").onclick=refineDraft;
+    if(hasWarn) document.getElementById("seoFixBtn").onclick=()=>optimizeDraft(warnIssues);
 
     box.style.display="flex"; box.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  // 제목 길이 보완: 20~40자에 맞는 제목을 맨 앞으로
+  function reorderTitlesByLength(){
+    const t=lastResult.titles||[]; if(t.length<2) return;
+    if(t[0].length>=20 && t[0].length<=40) return;
+    const ideal=t.find(x=>x.length>=20 && x.length<=40);
+    if(ideal) lastResult.titles=[ideal,...t.filter(x=>x!==ideal)];
+  }
+
+  async function optimizeDraft(issues){
+    const btn=document.getElementById("seoFixBtn");
+    btn.disabled=true; btn.innerHTML='<span class="spinner sm"></span>보완 중…';
+    try{
+      const data=await fetchJSON("/api/optimize",{body:lastResult.body,
+        mainKeyword:lastResult.mainKeyword,relatedKeywords:lastResult.relatedKeywords,issues},60000);
+      lastResult.body=data.body;
+      reorderTitlesByLength();
+      renderDraft(); // 본문·제목 갱신 + 점수 재계산
+    }catch(e){ btn.disabled=false; btn.textContent="⚡ 자동 보완"; alert(e.message); }
   }
 
   async function refineDraft(){
