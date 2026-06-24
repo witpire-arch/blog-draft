@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { body: draft, tone = "warm" } = req.body || {};
+    const { body: draft, tone = "warm", mainKeyword = "", relatedKeywords = [] } = req.body || {};
     if (!draft || !String(draft).trim()) {
       return res.status(400).json({ error: "다듬을 본문이 없습니다." });
     }
@@ -50,15 +50,19 @@ export default async function handler(req, res) {
     const sys =
       "당신은 사람 냄새 나는 글로 다듬는 한국어 블로그 윤문 전문가입니다. 주어진 블로그 본문을 " +
       "AI 티가 안 나게 자연스럽게 고쳐 씁니다. 규칙:\n" +
-      "1. 반복되는 표현·문장 구조를 다양하게 바꾼다.\n" +
+      "1. 반복되는 표현·문장 구조를 다양하게 바꾼다. 단 메인키워드 자체의 반복은 줄이지 않는다.\n" +
       "2. 과한 감탄사(와!, 정말!, 너무너무 등)를 줄인다.\n" +
       "3. 실제 사람이 겪은 듯한 사소한 경험담·디테일을 한두 군데 추가한다.\n" +
       "4. 말투를 입말에 가깝게 자연스럽게 다듬는다.\n" +
       "5. [사진1] [사진2] 같은 사진 마커와 소제목 줄은 위치·내용 그대로 유지한다.\n" +
-      "6. 전체 길이와 핵심 정보, 검색 키워드는 유지한다.\n" +
+      "6. (SEO 유지) 메인키워드는 본문에 3~6회 유지하고, 그중 1회는 반드시 첫 문단에 둔다. 관련 키워드도 빼지 않는다.\n" +
+      "7. 전체 길이와 핵심 정보를 유지한다.\n" +
       "결과는 다듬은 본문 전체만 JSON으로 반환한다.";
 
-    const userPrompt = "다음 본문을 다듬어 주세요:\n\n" + String(draft);
+    const userPrompt =
+      (mainKeyword ? `메인키워드(유지): ${mainKeyword}\n` : "") +
+      (relatedKeywords.length ? `관련 키워드(유지): ${relatedKeywords.join(", ")}\n` : "") +
+      "\n다음 본문을 다듬어 주세요:\n\n" + String(draft);
 
     const body = {
       systemInstruction: { parts: [{ text: sys }] },
